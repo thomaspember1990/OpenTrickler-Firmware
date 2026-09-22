@@ -63,7 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.ref_name }}"
+          TAG="${{ github.event.inputs.version || github.event.release.tag_name || github.ref_name }}"
           cp "build-pico2_w/app.uf2" "publish_out/OpenTrickler-Firmware-${TAG}.uf2"
 
           gh release upload "$TAG" \
