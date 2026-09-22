@@ -1223,9 +1223,15 @@ void charge_mode_wait_for_complete() {
     }
 
     char target_weight_string[WEIGHT_STRING_LEN];
+    // Always 2 decimal places here regardless of the configured
+    // decimal_places setting -- that setting is for the live weight readout
+    // (current_weight_string below), and letting it also stretch the
+    // "Target:" line to 3/4 decimals made the header cramped/harder to read
+    // at a glance for no real benefit (the target is a fixed number you set
+    // once, not something that needs extra live precision).
     float_to_string(target_weight_string,
                     charge_mode_config.target_charge_weight,
-                    charge_mode_config.eeprom_charge_mode_data.decimal_places);
+                    DP_2);
     if (ai_plan_available) {
         snprintf(title_string, sizeof(title_string), "AI %u/%u %.2frps",
                  (unsigned int)ai_plan.sample_index,
@@ -3782,11 +3788,34 @@ void charge_mode_wait_for_cup_removal() {
                                            dynamic_result,
                                            result_tolerance);
         }
+        else {
+            // Cup is actually off the scale (or the reading is mid-swing
+            // while it's being lifted/set down) -- the last result colour
+            // is stale at this point, not a live readout of anything, so
+            // show "not ready" (blue) rather than leaving red/green sitting
+            // on screen throughout the removal. Reuses
+            // charge_mode_apply_result_state()'s own not-ready path (see
+            // above, measurement_valid=false) rather than duplicating it.
+            charge_mode_apply_result_state(suppress_charge_result, false, 0.0f, result_tolerance);
+        }
 
-        // Generate stop condition
+        // Generate stop condition: the cup is back on the scale, empty, and
+        // stable -- same "near zero and settled" test used for taring
+        // elsewhere (see charge_mode_wait_for_zero() above, line ~1159).
+        //
+        // This used to read `data_buffer.getMean() + 10 < set_point_mean_margin`,
+        // which is the *cup-removed* test from charge_mode_is_cup_removed_measurement()
+        // (a large negative excursion when the cup is lifted off the scale
+        // entirely) copy-pasted in where a *cup-returned* test belongs. With
+        // set_point_mean_margin's default of ~0.02gn, that required the mean
+        // to stay below -9.98gn continuously -- true while the cup remains
+        // off the scale, but never true once it's set back down and reads
+        // near zero. So this loop could only ever exit while the cup stayed
+        // removed, and returning it (the expected end of this step) left the
+        // "Remove Cup" prompt stuck red forever, exactly as reported.
         if (data_buffer.getCounter() >= 5) {
-            if (data_buffer.getSd() < charge_mode_config.eeprom_charge_mode_data.set_point_sd_margin && 
-                data_buffer.getMean() + 10 < charge_mode_config.eeprom_charge_mode_data.set_point_mean_margin){
+            if (data_buffer.getSd() < charge_mode_config.eeprom_charge_mode_data.set_point_sd_margin &&
+                fabsf(data_buffer.getMean()) < charge_mode_config.eeprom_charge_mode_data.set_point_mean_margin) {
                 break;
             }
         }

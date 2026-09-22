@@ -1179,6 +1179,7 @@ static void load_config_from_eeprom(void) {
         g_config.noise_margin = g_config_eeprom.noise_margin;
         g_config.time_cost_weight = g_config_eeprom.time_cost_weight;
         g_config.error_cost_weight = g_config_eeprom.error_cost_weight;
+        g_config.safety_margin_pct = g_config_eeprom.safety_margin_pct;
     }
 
     g_config.coarse_budget_gn = ai_clampf(g_config.coarse_budget_gn, 20.0f, 500.0f);
@@ -1190,6 +1191,9 @@ static void load_config_from_eeprom(void) {
     g_config.noise_margin = ai_clampf(g_config.noise_margin, 0.005f, 0.25f);
     g_config.time_cost_weight = ai_clampf(g_config.time_cost_weight, 0.1f, 20.0f);
     g_config.error_cost_weight = ai_clampf(g_config.error_cost_weight, 0.1f, 50.0f);
+    // 0-50%: enough headroom to meaningfully fix a reported overthrow without
+    // a typo (e.g. "500") silently making every charge absurdly conservative.
+    g_config.safety_margin_pct = ai_clampf(g_config.safety_margin_pct, 0.0f, 50.0f);
     g_config_loaded = true;
 }
 
@@ -1204,6 +1208,7 @@ static bool save_config_to_eeprom(void) {
     g_config_eeprom.noise_margin = g_config.noise_margin;
     g_config_eeprom.time_cost_weight = g_config.time_cost_weight;
     g_config_eeprom.error_cost_weight = g_config.error_cost_weight;
+    g_config_eeprom.safety_margin_pct = g_config.safety_margin_pct;
 
     return eeprom_write(EEPROM_AI_TUNING_CONFIG_BASE_ADDR,
                         (uint8_t*)&g_config_eeprom,

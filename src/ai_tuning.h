@@ -6,7 +6,7 @@
 #include "profile.h"
 
 #define AI_TUNING_HISTORY_REV 14
-#define AI_TUNING_CONFIG_REV 6
+#define AI_TUNING_CONFIG_REV 7
 #define AI_TUNING_DROP_BUF_SIZE 16
 #define AI_TUNING_STAGE_SAMPLE_COUNT 12
 #define AI_TUNING_FINE_RECOVERY_SAMPLE_COUNT 4
@@ -269,6 +269,20 @@ typedef struct {
     float noise_margin;
     float time_cost_weight;
     float error_cost_weight;
+    // Extra conservatism the user dials in on top of what characterization/
+    // live data already derive (see http_rest_ai_suggestions() in
+    // rest_ai_tuning.c). 0 = suggestion unchanged from what the formula
+    // computes; e.g. 20 widens both stop thresholds by 20% and tightens the
+    // Kp cap to match, so the coarse/fine motors slow down and stop earlier.
+    // Purely additive on top of the existing margin -- it can only make a
+    // charge stop earlier/more conservatively, never later, so raising it is
+    // always safe as a response to reported overthrows. Added because the
+    // formula's margin is derived from characterized/observed conditions and
+    // can still undershoot on a setup that differs from those conditions
+    // (different powder, a not-yet-relearned tube, etc.); this gives the
+    // user an immediate manual lever instead of waiting on more logged
+    // throws to re-anchor it.
+    float safety_margin_pct;
 } ai_tuning_config_t;
 
 typedef struct {
@@ -282,6 +296,7 @@ typedef struct {
     float noise_margin;
     float time_cost_weight;
     float error_cost_weight;
+    float safety_margin_pct;
 } __attribute__((packed)) ai_tuning_config_eeprom_t;
 
 typedef struct {

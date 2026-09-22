@@ -806,7 +806,7 @@ bool http_rest_ai_tuning_config_get(struct fs_file *file, int num_params,
 
     ai_tuning_config_t* cfg = ai_tuning_get_config();
     int len = snprintf(ai_tuning_json_buffer, sizeof(ai_tuning_json_buffer),
-        "%s{\"coarse_budget_gn\":%.2f,\"fine_budget_gn\":%.2f,\"coarse_sample_count\":%u,\"fine_sample_count\":%u,\"coarse_sample_target_gn\":%.2f,\"fine_sample_target_gn\":%.2f,\"noise_margin\":%.4f,\"time_cost_weight\":%.4f,\"error_cost_weight\":%.4f}",
+        "%s{\"coarse_budget_gn\":%.2f,\"fine_budget_gn\":%.2f,\"coarse_sample_count\":%u,\"fine_sample_count\":%u,\"coarse_sample_target_gn\":%.2f,\"fine_sample_target_gn\":%.2f,\"noise_margin\":%.4f,\"time_cost_weight\":%.4f,\"error_cost_weight\":%.4f,\"safety_margin_pct\":%.1f}",
         http_json_header,
         cfg->coarse_budget_gn,
         cfg->fine_budget_gn,
@@ -816,7 +816,8 @@ bool http_rest_ai_tuning_config_get(struct fs_file *file, int num_params,
         cfg->fine_sample_target_gn,
         cfg->noise_margin,
         cfg->time_cost_weight,
-        cfg->error_cost_weight);
+        cfg->error_cost_weight,
+        cfg->safety_margin_pct);
     return finalize_json_response(file, len);
 }
 
@@ -852,6 +853,9 @@ bool http_rest_ai_tuning_config_set(struct fs_file *file, int num_params,
         else if (strcmp(params[idx], "error_cost_weight") == 0) {
             cfg->error_cost_weight = strtof(values[idx], NULL);
         }
+        else if (strcmp(params[idx], "safety_margin_pct") == 0) {
+            cfg->safety_margin_pct = strtof(values[idx], NULL);
+        }
     }
 
     cfg->coarse_budget_gn = fmaxf(20.0f, fminf(500.0f, cfg->coarse_budget_gn));
@@ -863,6 +867,7 @@ bool http_rest_ai_tuning_config_set(struct fs_file *file, int num_params,
     cfg->noise_margin = fmaxf(0.005f, fminf(0.25f, cfg->noise_margin));
     cfg->time_cost_weight = fmaxf(0.1f, fminf(20.0f, cfg->time_cost_weight));
     cfg->error_cost_weight = fmaxf(0.1f, fminf(50.0f, cfg->error_cost_weight));
+    cfg->safety_margin_pct = fmaxf(0.0f, fminf(50.0f, cfg->safety_margin_pct));
 
     ai_tuning_save_config();
     int len = snprintf(ai_tuning_json_buffer, sizeof(ai_tuning_json_buffer),
@@ -921,6 +926,15 @@ bool http_rest_ai_tuning_config_set(struct fs_file *file, int num_params,
  *   re-characterization. Characterization measures speed-vs-flow once and
  *   precisely; live data measures how the real controller with real
  *   hardware actually finishes charges, and the second is what you feel.
+ *
+ *   Finally, "safety_margin_pct" (Settings > AI Tuning > Suggested PID
+ *   Baseline, 0-50%, default 0) is a manual, user-set multiplier applied on
+ *   top of everything above: it widens both stop thresholds and lets the Kp
+ *   cap tighten to match. It exists for the case where none of the above
+ *   margins turn out to be enough for a particular setup -- widening it can
+ *   only make the controller stop earlier, never later, so it is always a
+ *   safe response to a reported overthrow, independent of waiting for more
+ *   logged throws to re-anchor the live-data margin.
  */
 bool http_rest_ai_suggestions(struct fs_file *file, int num_params,
                               char *params[], char *values[]) {
@@ -1021,6 +1035,25 @@ bool http_rest_ai_suggestions(struct fs_file *file, int num_params,
     float accept_tol = fmaxf(kernel > 0.0f ? kernel : 0.0f, 0.0154f);
     accept_tol = fmaxf(0.008f, fminf(0.20f, accept_tol));
 
+    // --- user-dialed extra safety margin (Settings > AI Tuning > Suggested
+    // PID Baseline). 0 by default, leaving everything above unchanged. This
+    // widens both stop thresholds on top of whatever characterization/live
+    // data already derived, *before* the Kp cap below, so the cap tightens
+    // to match automatically rather than needing a second, separate
+    // adjustment. A wider stop threshold can only make the controller stop
+    // earlier -- it is not possible for this setting to increase overthrow
+    // risk, only reduce it (at the cost of slightly more conservative,
+    // possibly-slower charges). Exists because the formula's margin is
+    // derived from characterized/observed conditions and can still run a
+    // little tight on a setup that differs from those conditions; this is
+    // the user's own manual lever for "still seeing overthrows, make it
+    // more cautious right now" without waiting on more logged throws.
+    float safety_margin_scale = 1.0f + (cfg->safety_margin_pct / 100.0f);
+    coarse_stop *= safety_margin_scale;
+    coarse_stop = fmaxf(0.10f, fminf(5.0f, coarse_stop));
+    fine_stop *= safety_margin_scale;
+    fine_stop = fmaxf(0.010f, fminf(0.50f, fine_stop));
+
     // --- Kp cap: commanded speed at the stop threshold must not exceed the
     // speed the tail was characterized at, or the real tail will be bigger
     // than what the threshold above assumed. This is the direct fix for
@@ -1098,7 +1131,8 @@ bool http_rest_ai_suggestions(struct fs_file *file, int num_params,
           "\"tau_coarse_s\":%.2f,\"tau_fine_s\":%.2f,"
           "\"kp_coarse_cap\":%.4f,\"kp_fine_cap\":%.4f,"
           "\"used_live_coarse_tail\":%s,\"used_live_fine_tail\":%s,"
-          "\"over_rate_applied\":%s,\"live_observation_count\":%u,\"live_over_rate\":%.3f},"
+          "\"over_rate_applied\":%s,\"live_observation_count\":%u,\"live_over_rate\":%.3f,"
+          "\"safety_margin_pct\":%.1f},"
         "\"suggested\":{"
           "\"p3\":%.4f,\"p4\":0,\"p5\":0,"
           "\"p6\":%.3f,\"p7\":%.3f,"
@@ -1114,6 +1148,7 @@ bool http_rest_ai_suggestions(struct fs_file *file, int num_params,
         over_rate_applied ? "true" : "false",
         (unsigned)(have_runtime ? runtime_stats.observation_count : 0),
         have_runtime ? runtime_stats.over_rate : 0.0f,
+        cfg->safety_margin_pct,
         kp_coarse, coarse_min, coarse_max,
         kp_fine, fine_min, fine_max,
         coarse_stop, fine_stop, accept_tol);

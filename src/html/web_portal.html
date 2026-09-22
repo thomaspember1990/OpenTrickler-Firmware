@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.3/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0 viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <!-- Served locally by this firmware (rest_endpoints.c), not fetched from
          GitHub -- this device is often used with no internet route, and
          iOS's "Add to Home Screen" specifically requires a same-origin PNG
@@ -76,6 +76,21 @@
             backdrop-filter: blur(10px) saturate(140%);
             -webkit-backdrop-filter: blur(10px) saturate(140%);
             background-color: color-mix(in oklch, oklch(var(--b1)) 88%, transparent) !important;
+            /* When launched from the iOS Home Screen (standalone display
+               mode) with apple-mobile-web-app-status-bar-style set to
+               black-translucent, iOS draws the status bar (clock, battery)
+               transparently on TOP of the page instead of reserving space
+               for it -- so a "sticky top-0" bar like this one sits directly
+               under the clock with nothing pushing it down, which is why
+               the hamburger button ended up rendering underneath/behind the
+               time. env(safe-area-inset-top) is the notch/status-bar height
+               iOS exposes for exactly this; adding it as top padding here
+               pushes this navbar's actual content down below the status
+               bar while letting its own background/blur keep extending up
+               to fill that area, so there's no visible gap or seam. In
+               ordinary Safari (not installed to the Home Screen) this inset
+               is 0, so nothing changes there. */
+            padding-top: env(safe-area-inset-top, 0px);
         }
 
         .btm-nav {
@@ -314,6 +329,23 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
         /* Exclude the pixels taken by the bottom nav bar */
         .exclude-bottom-nav {
             padding-bottom: 64px;
+        }
+
+        /* Trickler is the only top-level page whose own content starts right
+           at the top of the screen with nothing sticky above it (Settings'
+           equivalent is the .navbar rule above; AI Tuning/Purge are just
+           sub-pages of Trickler/Settings, so this covers them too). Same
+           iOS Home-Screen status-bar overlap as .navbar, same fix. */
+        #sectionTrickler {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+
+        /* The Settings drawer's slide-out side menu (Scale/Profile/Wireless/
+           ...) is a sibling of .navbar, not a descendant of it, so it needs
+           its own instance of the same fix -- otherwise the first menu item
+           renders right under the status bar when the drawer is open. */
+        .drawer-side > ul.menu {
+            padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
         }
     </style>
 </head>
@@ -1598,6 +1630,16 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                                         <span class="label-text-alt opacity-70 ot-help">When on, every normal PID charge on this profile is logged (tail, over/under, timing). Once a handful have landed, the suggestions below start using that instead of (or blended with) the one-off characterization numbers &mdash; which is what lets the suggested PID actually come down after real overthrows, and what re-anchors it after a hardware change like a motor microstep setting, without a full re-characterization. <b>Off by default; turn this on if you want the suggestions to keep learning.</b></span>
                                     </div>
 
+                                    <div class="grid grid-cols-1 gap-1">
+                                        <span class="label-text">Extra Safety Margin</span>
+                                        <div class="flex items-center gap-3">
+                                            <input type="range" id="aiCfgSafetyMargin" min="0" max="50" step="5" class="range range-sm flex-1" oninput="document.getElementById('aiCfgSafetyMarginVal').innerText = this.value + '%'">
+                                            <span id="aiCfgSafetyMarginVal" class="font-mono text-sm w-12 text-right">0%</span>
+                                            <button class="btn btn-xs btn-primary" onclick="aiTuningSaveAdvancedConfig(); aiLoadSuggestions();">Apply</button>
+                                        </div>
+                                        <span class="label-text-alt opacity-70 ot-help">Still seeing overthrows on the suggested values? Raise this and hit Apply &mdash; it widens both stop thresholds below (and tightens the Kp cap to match) so the motors slow down and stop earlier. This can only make a charge stop earlier, never later, so it's always safe to raise. Default 0% leaves the suggestion exactly as characterization/live data compute it; try 15-20% first.</span>
+                                    </div>
+
                                     <div id="aiSuggestMeasured" class="text-xs bg-base-100 rounded-box p-3 font-mono whitespace-pre-wrap">Load a profile with a saved model to see suggestions.</div>
                                     <div id="aiSuggestLiveNote" class="text-xs opacity-70"></div>
                                     <div class="overflow-x-auto">
@@ -1900,7 +1942,7 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
             </div> 
             <div class="drawer-side exclude-bottom-nav">
                 <label id="closeDrawerSide" for="settingsDrawer" aria-label="close sidebar" class="drawer-overlay"></label> 
-                <ul id=drawerSlide" class="menu p-2 w-60 min-h-full bg-base-200">
+                <ul id="drawerSlide" class="menu p-2 w-60 min-h-full bg-base-200">
                     <!-- Sidebar content here -->
                     <li><a class="text-lg" onclick="onSettingsLinkClicked('settings-scale')">Scale</a></li>
                     <li><a class="text-lg" onclick="onSettingsLinkClicked('settings-profile')">Profile</a></li>
@@ -3146,7 +3188,10 @@ const ChargeModeState = Object.freeze({
                     `scale period = ${Number(m.scale_period_ms).toFixed(0)} ms   kernel = ${Number(m.kernel_weight_gn).toFixed(4)} gn\n` +
                     `time constants: coarse tau = ${Number(m.tau_coarse_s).toFixed(2)} s, fine tau = ${Number(m.tau_fine_s).toFixed(2)} s\n` +
                     `Kp = 1 / (tau * k), then capped so speed-at-stop-threshold <= characterized tail speed\n` +
-                    `Kp cap: coarse ${Number(m.kp_coarse_cap).toFixed(4)}  fine ${Number(m.kp_fine_cap).toFixed(4)}`;
+                    `Kp cap: coarse ${Number(m.kp_coarse_cap).toFixed(4)}  fine ${Number(m.kp_fine_cap).toFixed(4)}\n` +
+                    (Number(m.safety_margin_pct || 0) > 0
+                        ? `extra safety margin: +${Number(m.safety_margin_pct).toFixed(0)}% (stop thresholds widened, Kp capped tighter to match)`
+                        : `extra safety margin: 0% (default — raise it above if you're still seeing overthrows)`);
             }
 
             const liveNoteEl = document.getElementById('aiSuggestLiveNote');
@@ -4834,6 +4879,7 @@ const ChargeModeState = Object.freeze({
         noise_margin: 0.05,
         time_cost_weight: 1.0,
         error_cost_weight: 8.0,
+        safety_margin_pct: 0,
     };
     const _aiCfgFieldMap = {
         'coarse_budget_gn': 'aiCfgCoarseBudget',
@@ -4845,6 +4891,7 @@ const ChargeModeState = Object.freeze({
         'noise_margin': 'aiCfgNoiseMargin',
         'time_cost_weight': 'aiCfgTimeWeight',
         'error_cost_weight': 'aiCfgErrorWeight',
+        'safety_margin_pct': 'aiCfgSafetyMargin',
     };
 
     function _applyAiCfgToForm(data) {
@@ -4853,6 +4900,10 @@ const ChargeModeState = Object.freeze({
             if (!el) continue;
             const val = (data && data[key] !== undefined) ? data[key] : _aiCfgDefaults[key];
             el.value = val;
+            if (elId === 'aiCfgSafetyMargin') {
+                const lbl = document.getElementById('aiCfgSafetyMarginVal');
+                if (lbl) lbl.innerText = val + '%';
+            }
         }
     }
 

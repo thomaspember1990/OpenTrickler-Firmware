@@ -14,6 +14,20 @@ Base: `Opentrickler_ML` `2026.07.12-beta.14`.
 
 ### Added
 
+- **AI Tuning — Extra Safety Margin** — new adjustable slider (0–50%,
+  default 0%) on the AI Tuning page's Suggested PID Baseline panel, for
+  users reporting overthrows on the AI-suggested values. It scales the
+  computed coarse/fine stop thresholds outward before the existing Kp cap
+  is applied, so it composes correctly with — rather than fights — every
+  other safety mechanism already in that calculation. It is purely
+  additive/conservative: it can only make the controller stop earlier
+  than it otherwise would, never later, so raising it cannot itself cause
+  an overthrow. New `safety_margin_pct` field (`/rest/ai_tuning_config`),
+  EEPROM revision bumped to accommodate it.
+- **Real logo on the iOS/Android Home Screen icon** — the Home Screen
+  icon shown when the web portal is saved to a phone's home screen (and
+  the browser favicon) now uses the actual TP Custom Rifle Parts logo
+  instead of the placeholder icon.
 - **Reverse Tube (anti-dribble)** — after a tube reaches its own genuine
   final stop for a charge (not on an abort), it can be briefly reversed to
   pull back the last bit of powder sitting in the tube/gate, reducing
@@ -119,6 +133,36 @@ Base: `Opentrickler_ML` `2026.07.12-beta.14`.
   cup" while the charge was still well under target.
 
 ### Fixed
+
+- **"Remove Cup" could get stuck permanently after the cup was returned**
+  — the loop waiting for the cup to come back used the same "large
+  negative excursion" formula that detects the cup being *lifted off* the
+  scale, copy-pasted in where the opposite "near zero and settled" test
+  belonged. With the default zero-band margin, that condition could only
+  ever be true while the cup stayed off the scale, so returning it (the
+  expected way to finish) left "Remove Cup" showing red indefinitely even
+  once the scale read zero.
+- **"Remove Cup" LED showed a stale colour while the cup was actually
+  off the scale** — while the cup was being lifted or was genuinely
+  removed, the last charge result's red/green/etc. stayed on screen
+  instead of the "not ready" blue, so putting the cup back briefly showed
+  the old colour before catching up. The LED now shows "not ready" for
+  the whole time the cup is off/moving, matching the colour shown before
+  a charge starts.
+- **LCD "Target:" line now always shows 2 decimal places**, independent
+  of the Decimal Places setting, which continues to control only the live
+  weight readout below it. Previously both lines followed the same
+  setting, making the header cramped at 3 decimal places for no benefit
+  (the target is a fixed number you set once, not a live reading).
+- **iOS Home Screen (installed as a web app) status bar overlap** — with
+  `apple-mobile-web-app-status-bar-style: black-translucent`, iOS draws
+  the status bar transparently over the page instead of reserving space
+  for it. The Settings page's top bar, the settings drawer's slide-out
+  side menu, and the Trickler page's own header all rendered underneath
+  the clock/status icons as a result. All three now pad themselves clear
+  of the status bar/notch using `env(safe-area-inset-top)`. Also fixes a
+  missing comma in the `viewport` meta tag that was silently preventing
+  `viewport-fit=cover` from taking effect at all.
 
 - **AI-tuning overthrow on large trickler tubes, and on transferring AI
   suggestions to PID** — root-caused to two related issues:
