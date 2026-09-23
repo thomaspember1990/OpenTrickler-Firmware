@@ -14,6 +14,7 @@
 #include "eeprom.h"
 #include "charge_mode.h"
 #include "cleanup_mode.h"
+#include "pid_autotune.h"
 #include "eeprom.h"
 #include "wireless.h"
 #include "system_control.h"
@@ -87,6 +88,9 @@ void menu_task(void *p){
                     break;
                 case APP_STATE_ENTER_WIFI_INFO:
                     exit_form_id = wireless_view_wifi_info();
+                    break;
+                case APP_STATE_ENTER_PID_AUTOTUNE_FROM_REST:
+                    exit_form_id = pid_autotune_menu();
                     break;
                 default:
                     break;

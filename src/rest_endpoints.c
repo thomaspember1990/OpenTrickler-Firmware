@@ -17,6 +17,8 @@
 #include "rest_errors.h"
 #include "rest_ai_tuning.h"
 #include "ai_tuning.h"
+#include "rest_pid_autotune.h"
+#include "pid_autotune.h"
 #include "flash_storage.h"
 #include "display_config.h"
 #include "ota_update.h"
@@ -231,6 +233,10 @@ bool rest_endpoints_init(bool default_wizard) {
     // Initialize AI tuning system and REST endpoints
     ai_tuning_init();
     rest_ai_tuning_init();
+
+    // Initialize PID autotune ("Learn Powder"-style characterisation) and REST endpoints
+    pid_autotune_init();
+    rest_pid_autotune_init();
 
     return true;
 }

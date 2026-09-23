@@ -605,7 +605,6 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
 
                     <!-- Profile Settings -->
                     <section class="settings-page" id="settings-profile" name="Profile" style="display: none;">
-                        <form id="profileConfigForm" action="/rest/profile_config" class="grid grid-cols-1 gap-3">
                             <div class="grid grid-cols-1 gap-2">
                                 <div role="alert" class="alert">
                                     <svg
@@ -624,7 +623,7 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                                 </div>
 
                                 <span class="label-text">Select Profile</span>
-                                <select class="select select-bordered select-primary" name="pf" onchange="populateProfileSelection(this)" id="select_profile_option">
+                                <select class="select select-bordered select-primary" name="pf" form="profileConfigForm" onchange="populateProfileSelection(this)" id="select_profile_option">
                                     <option value="0">#0</option>
                                     <option value="1">#1</option>
                                     <option value="2">#2</option>
@@ -646,76 +645,6 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
 
                             <div class="divider"></div>
 
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Profile Name</span>
-                                <input type="text" class="input input-bordered" name="p2" maxlength="15">
-                                <span class="label-text-alt opacity-70 ot-help">A name for this powder/load combination, up to 15 characters. Each profile keeps its own PID gains, speeds, thresholds and AI model, so use one profile per powder.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Coarse Trickler Kp</span>
-                                <input type="number" class="input input-bordered" name="p3" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">How hard the coarse tube reacts to how far you are from target. Speed = Kp &times; remaining weight. <b>Suggested value comes from measured flow: Kp = 1/(&tau;&middot;k).</b> <b>Raise</b> for a faster, more aggressive coarse run; too high and it slams to max speed then overshoots the handoff. <b>Lower</b> for a gentler ramp that costs a few seconds. Symptom of too high: coarse repeatedly blows past the stop threshold. Symptom of too low: coarse crawls and the throw drags.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Coarse Trickler Ki</span>
-                                <input type="number" class="input input-bordered" name="p4" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">Integral term &mdash; accumulates leftover error over time to grind out a steady offset. <b>Suggested 0, and 0 is usually right.</b> The coarse phase is short and ends well short of target, so there is no steady-state error worth correcting, and any wind-up carries straight into an overshoot. Only add a very small value (0.001&ndash;0.01) if coarse consistently stalls short of the handoff.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Coarse Trickler Kd</span>
-                                <input type="number" class="input input-bordered" name="p5" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">Derivative term &mdash; reacts to how fast the weight is changing. <b>Suggested 0, and 0 is strongly recommended on an A&amp;D FX-120i.</b> The scale quantises to ~0.0154&nbsp;gn, so the rate signal is mostly quantisation steps; a derivative term amplifies that into speed jitter. Leave at 0 unless you have a much faster, finer scale.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Coarse Trickler Min Flow Speed (rps)</span>
-                                <input type="number" class="input input-bordered" name="p6" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">Slowest the coarse tube is allowed to turn. Below a certain speed a stepper stalls or delivers erratically, so this is a floor, not a target. <b>Raise</b> if the coarse tube stutters or stalls near the end of its run. <b>Lower</b> for a gentler approach to handoff. Suggested value is the measured trim speed from characterization.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Coarse Trickler Max Flow Speed (rps)</span>
-                                <input type="number" class="input input-bordered" name="p7" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">Fastest the coarse tube may turn. This sets how quickly bulk powder is delivered and is the main lever on total throw time. <b>Raise</b> for faster throws, but a faster tube has more momentum and a bigger tail, so the coarse stop threshold must grow to match. <b>Lower</b> if you see overshoot past the handoff that raising the stop threshold cannot fix.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Fine Trickler Kp</span>
-                                <input type="number" class="input input-bordered" name="p8" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">How hard the fine tube reacts to remaining weight. This is the gain that decides your final accuracy and the length of the last few seconds. <b>Raise</b> to close the last fraction of a grain quicker, at the risk of overshooting past target. <b>Lower</b> for a slower, safer creep. If you regularly go over by a small amount, lower this before touching anything else.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Fine Trickler Ki</span>
-                                <input type="number" class="input input-bordered" name="p9" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">Integral term for the fine tube. <b>Suggested 0.</b> The fine phase is the long one, so this is where wind-up does real damage: error accumulates while the scale lags, then dumps extra powder just as you reach target. Leave at 0 unless the fine tube reliably stalls just short of target, and then only 0.001&ndash;0.005.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Fine Trickler Kd</span>
-                                <input type="number" class="input input-bordered" name="p10" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">Derivative term for the fine tube. <b>Suggested 0 and best left there.</b> Same reason as coarse Kd, but worse: near target the real weight change per reading is around one scale count, so a derivative term is reacting almost entirely to quantisation noise.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Fine Trickler Min Flow Speed (rps)</span>
-                                <input type="number" class="input input-bordered" name="p11" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">Slowest the fine tube may turn &mdash; effectively your finest possible delivery rate, and therefore a hard limit on accuracy. <b>Lower</b> for finer control right at target, until the motor starts stalling or delivering in unpredictable clumps. <b>Raise</b> if the last stretch takes too long or the tube stalls.</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Fine Trickler Max Flow Speed (rps)</span>
-                                <input type="number" class="input input-bordered" name="p12" step="0.001">
-                                <span class="label-text-alt opacity-70 ot-help">Fastest the fine tube may turn. Sets how quickly the gap left by the coarse tube is closed. <b>Raise</b> to shorten the fine phase, but the tail grows with speed so the fine stop threshold must grow too. <b>Lower</b> for a calmer finish. If throws are slow, raising the coarse stop threshold usually helps more than raising this.</span>
-                            </div>
-
-                            <button class="btn btn-neutral settings-apply-btn">Apply</button>
-                        </form>
-
-                        <div class="divider">Charge Mode Settings</div>
                         <form id="chargeModeConfigForm" action="/rest/charge_mode_config" class="grid grid-cols-1 gap-3">
                             <!-- Profile selection for this merged page happens via the single
                                  selector at the top (select_profile_option). This element is kept,
@@ -731,6 +660,46 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                                 <option value="6">#6</option>
                                 <option value="7">#7</option>
                             </select>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Controller</span>
+                                <select class="select select-bordered" name="c27" onchange="onControllerChanged(this)">
+                                    <option value="false">PID - Original OpenTrickler Firmware</option>
+                                    <option value="true">Adaptive - Based on Opentrickler_ML Firmware</option>
+                                </select>
+                                <span class="label-text-alt opacity-70 ot-help">PID is the original OpenTrickler control loop and is recommended for normal use - it takes its stop points directly from your thresholds below. Adaptive is the legacy controller from <a class="link link-primary" href="https://github.com/WhoKilledBambiLabs/Opentrickler_ML" target="_blank" rel="noopener">Opentrickler_ML</a> that computes its own runtime stop margins; kept for reference/compatibility, not recommended.</span>
+                            </div>
+
+
+
+
+                            <div id="legacyAdaptiveOptions" style="display:none;">
+                                <div class="divider text-sm">Legacy Adaptive Controller Options</div>
+                                <div class="alert alert-warning py-2 text-sm mb-2">
+                                    <span>These two only affect the legacy adaptive controller. They do nothing while the Controller above is set to PID, because the PID path takes its stop points straight from your thresholds.</span>
+                                </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Coarse Stop Authority</span>
+                                <select class="select select-bordered" name="c24">
+                                    <option value="false">Use my threshold above (recommended)</option>
+                                    <option value="true">Let AI tuning decide</option>
+                                </select>
+                                <span class="label-text-alt opacity-70 ot-help">Whether the legacy adaptive controller may choose its own coarse handoff point instead of using your threshold. No effect while the Controller is set to PID.</span>
+                                <span class="label-text-alt opacity-70">"Use my threshold" caps how much the AI leaves for the fine tube at handoff, so it can't quietly hand off several grains early. It is still raised automatically if the coarse motor physically needs more room to stop without overshooting &mdash; the live status line reports when that happens. "Let AI tuning decide" restores the fully adaptive behaviour.</span>
+                            </div>
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Accuracy vs Speed</span>
+                                <input type="range" class="range range-primary" name="c25" min="0" max="1" step="0.05" oninput="onAccuracySpeedSliderInput(this)" onchange="onAccuracySpeedCommit(this)">
+                                <span class="label-text-alt opacity-70 ot-help">Shifts how much finishing margin the legacy adaptive controller leaves the fine phase. No effect while the Controller is set to PID.</span>
+                                <div class="flex justify-between text-xs px-1 opacity-70">
+                                    <span>Faster</span>
+                                    <span id="accuracySpeedValue">Balanced</span>
+                                    <span>More accurate</span>
+                                </div>
+                                <span class="label-text-alt opacity-70">Shifts how much finishing margin the fine phase is given. Toward "faster" it finishes sooner with a little more spread; toward "more accurate" it works to a tighter finish and takes longer. Centre is neutral and matches previous behaviour.</span>
+                            </div>
+                            </div>
 
                             <div class="grid grid-cols-1 gap-1">
                                 <span class="label-text">Powder Kernel Weight <span class="ot-unit">grains</span></span>
@@ -777,45 +746,6 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                                 <span class="label-text-alt opacity-70 ot-help">How much of the charge is left for the fine tube when the coarse tube stops. <b>Typical 0.5&ndash;1.5&nbsp;gn.</b> <b>Lower</b> = coarse runs longer, faster throws, but more risk it overshoots on its own momentum. <b>Higher</b> = safer against overshoot, but the fine tube has more work so throws take longer and vary more. If throws are slow, lower this first. Must stay above the coarse tube's measured tail, or the coarse tube will carry past target after it stops.</span>
                             </div>
 
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Controller</span>
-                                <select class="select select-bordered" name="c27" onchange="onControllerChanged(this)">
-                                    <option value="false">PID - Original OpenTrickler Firmware</option>
-                                    <option value="true">Adaptive - Based on Opentrickler_ML Firmware</option>
-                                </select>
-                                <span class="label-text-alt opacity-70 ot-help">PID is the original OpenTrickler control loop and is recommended for normal use - it takes its stop points directly from your thresholds below. Adaptive is the legacy controller from <a class="link link-primary" href="https://github.com/WhoKilledBambiLabs/Opentrickler_ML" target="_blank" rel="noopener">Opentrickler_ML</a> that computes its own runtime stop margins; kept for reference/compatibility, not recommended.</span>
-                            </div>
-
-
-
-
-                            <div id="legacyAdaptiveOptions" style="display:none;">
-                                <div class="divider text-sm">Legacy Adaptive Controller Options</div>
-                                <div class="alert alert-warning py-2 text-sm mb-2">
-                                    <span>These two only affect the legacy adaptive controller. They do nothing while the Controller above is set to PID, because the PID path takes its stop points straight from your thresholds.</span>
-                                </div>
-
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Coarse Stop Authority</span>
-                                <select class="select select-bordered" name="c24">
-                                    <option value="false">Use my threshold above (recommended)</option>
-                                    <option value="true">Let AI tuning decide</option>
-                                </select>
-                                <span class="label-text-alt opacity-70 ot-help">Whether the legacy adaptive controller may choose its own coarse handoff point instead of using your threshold. No effect while the Controller is set to PID.</span>
-                                <span class="label-text-alt opacity-70">"Use my threshold" caps how much the AI leaves for the fine tube at handoff, so it can't quietly hand off several grains early. It is still raised automatically if the coarse motor physically needs more room to stop without overshooting &mdash; the live status line reports when that happens. "Let AI tuning decide" restores the fully adaptive behaviour.</span>
-                            </div>
-                            <div class="grid grid-cols-1 gap-1">
-                                <span class="label-text">Accuracy vs Speed</span>
-                                <input type="range" class="range range-primary" name="c25" min="0" max="1" step="0.05" oninput="onAccuracySpeedSliderInput(this)" onchange="onAccuracySpeedCommit(this)">
-                                <span class="label-text-alt opacity-70 ot-help">Shifts how much finishing margin the legacy adaptive controller leaves the fine phase. No effect while the Controller is set to PID.</span>
-                                <div class="flex justify-between text-xs px-1 opacity-70">
-                                    <span>Faster</span>
-                                    <span id="accuracySpeedValue">Balanced</span>
-                                    <span>More accurate</span>
-                                </div>
-                                <span class="label-text-alt opacity-70">Shifts how much finishing margin the fine phase is given. Toward "faster" it finishes sooner with a little more spread; toward "more accurate" it works to a tighter finish and takes longer. Centre is neutral and matches previous behaviour.</span>
-                            </div>
-                            </div>
 
                             <div class="grid grid-cols-1 gap-1">
                                 <span class="label-text">Accepted Charge Tolerance <span class="ot-unit">&plusmn; grains</span></span>
@@ -998,6 +928,80 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                                 <input type="number" class="input input-bordered" name="c23" step="100" min="200" max="5000">
                                 <span class="label-text-alt opacity-70 ot-help">The fixed settling wait, used only when the mode above is set to Fixed. <b>Longer</b> = more trustworthy final figure, slower cycle. On an FX-120i, under about 1000&nbsp;ms risks recording a value the scale has not finished settling on.</span>
                                 <span class="text-xs text-gray-500">Fixed wait after motors stop (used when fixed stabilization is ON)</span>
+                            </div>
+
+                            <button class="btn btn-neutral settings-apply-btn">Apply</button>
+                        </form>
+
+                        <div class="divider">PID Gains</div>
+                        <div class="alert alert-info py-2 text-sm mb-2">
+                            <span>Only used while the Controller above is set to PID &mdash; the recommended and default path. Switching to the legacy Adaptive controller computes its own runtime margins instead.</span>
+                        </div>
+                        <form id="profileConfigForm" action="/rest/profile_config" class="grid grid-cols-1 gap-3">
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Profile Name</span>
+                                <input type="text" class="input input-bordered" name="p2" maxlength="15">
+                                <span class="label-text-alt opacity-70 ot-help">A name for this powder/load combination, up to 15 characters. Each profile keeps its own PID gains, speeds, thresholds and AI model, so use one profile per powder.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Coarse Trickler Kp</span>
+                                <input type="number" class="input input-bordered" name="p3" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">How hard the coarse tube reacts to how far you are from target. Speed = Kp &times; remaining weight. <b>Suggested value comes from measured flow: Kp = 1/(&tau;&middot;k).</b> <b>Raise</b> for a faster, more aggressive coarse run; too high and it slams to max speed then overshoots the handoff. <b>Lower</b> for a gentler ramp that costs a few seconds. Symptom of too high: coarse repeatedly blows past the stop threshold. Symptom of too low: coarse crawls and the throw drags.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Coarse Trickler Ki</span>
+                                <input type="number" class="input input-bordered" name="p4" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">Integral term &mdash; accumulates leftover error over time to grind out a steady offset. <b>Suggested 0, and 0 is usually right.</b> The coarse phase is short and ends well short of target, so there is no steady-state error worth correcting, and any wind-up carries straight into an overshoot. Only add a very small value (0.001&ndash;0.01) if coarse consistently stalls short of the handoff.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Coarse Trickler Kd</span>
+                                <input type="number" class="input input-bordered" name="p5" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">Derivative term &mdash; reacts to how fast the weight is changing. <b>Suggested 0, and 0 is strongly recommended on an A&amp;D FX-120i.</b> The scale quantises to ~0.0154&nbsp;gn, so the rate signal is mostly quantisation steps; a derivative term amplifies that into speed jitter. Leave at 0 unless you have a much faster, finer scale.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Coarse Trickler Min Flow Speed (rps)</span>
+                                <input type="number" class="input input-bordered" name="p6" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">Slowest the coarse tube is allowed to turn. Below a certain speed a stepper stalls or delivers erratically, so this is a floor, not a target. <b>Raise</b> if the coarse tube stutters or stalls near the end of its run. <b>Lower</b> for a gentler approach to handoff. Suggested value is the measured trim speed from characterization.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Coarse Trickler Max Flow Speed (rps)</span>
+                                <input type="number" class="input input-bordered" name="p7" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">Fastest the coarse tube may turn. This sets how quickly bulk powder is delivered and is the main lever on total throw time. <b>Raise</b> for faster throws, but a faster tube has more momentum and a bigger tail, so the coarse stop threshold must grow to match. <b>Lower</b> if you see overshoot past the handoff that raising the stop threshold cannot fix.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Fine Trickler Kp</span>
+                                <input type="number" class="input input-bordered" name="p8" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">How hard the fine tube reacts to remaining weight. This is the gain that decides your final accuracy and the length of the last few seconds. <b>Raise</b> to close the last fraction of a grain quicker, at the risk of overshooting past target. <b>Lower</b> for a slower, safer creep. If you regularly go over by a small amount, lower this before touching anything else.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Fine Trickler Ki</span>
+                                <input type="number" class="input input-bordered" name="p9" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">Integral term for the fine tube. <b>Suggested 0.</b> The fine phase is the long one, so this is where wind-up does real damage: error accumulates while the scale lags, then dumps extra powder just as you reach target. Leave at 0 unless the fine tube reliably stalls just short of target, and then only 0.001&ndash;0.005.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Fine Trickler Kd</span>
+                                <input type="number" class="input input-bordered" name="p10" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">Derivative term for the fine tube. <b>Suggested 0 and best left there.</b> Same reason as coarse Kd, but worse: near target the real weight change per reading is around one scale count, so a derivative term is reacting almost entirely to quantisation noise.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Fine Trickler Min Flow Speed (rps)</span>
+                                <input type="number" class="input input-bordered" name="p11" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">Slowest the fine tube may turn &mdash; effectively your finest possible delivery rate, and therefore a hard limit on accuracy. <b>Lower</b> for finer control right at target, until the motor starts stalling or delivering in unpredictable clumps. <b>Raise</b> if the last stretch takes too long or the tube stalls.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Fine Trickler Max Flow Speed (rps)</span>
+                                <input type="number" class="input input-bordered" name="p12" step="0.001">
+                                <span class="label-text-alt opacity-70 ot-help">Fastest the fine tube may turn. Sets how quickly the gap left by the coarse tube is closed. <b>Raise</b> to shorten the fine phase, but the tail grows with speed so the fine stop threshold must grow too. <b>Lower</b> for a calmer finish. If throws are slow, raising the coarse stop threshold usually helps more than raising this.</span>
                             </div>
 
                             <button class="btn btn-neutral settings-apply-btn">Apply</button>
@@ -1494,11 +1498,7 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                             </div>
                             <button id="aiMachineCalStartBtn" class="btn btn-info w-full" onclick="aiMachineCalibrationStart()">Start OpenTrickler Calibration</button>
                             <button id="aiTuningApplyBtn" class="btn btn-success w-full" onclick="aiTuningApply()" disabled>Save Learned Model</button>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button class="btn btn-primary btn-sm" onclick="aiApplyAllSuggestions()">Save Suggested PIDs</button>
-                                <button class="btn btn-accent btn-sm" onclick="aiSaveModelAndSuggestions()">Save Both</button>
-                            </div>
-                            <span class="label-text-alt opacity-70 ot-help">"Save Learned Model" stores the characterization result itself. "Save Suggested PIDs" writes its derived Kp/thresholds into this profile (see Suggested PID Baseline below for the full breakdown before committing). "Save Both" does both in one step.</span>
+                            <span class="label-text-alt opacity-70 ot-help">Stores the characterization result on this profile. For PID gains and stop thresholds, use the dedicated PID Tuning page instead.</span>
 
                             <details class="collapse collapse-arrow bg-base-200 rounded-box">
                                 <summary class="collapse-title font-medium">Advanced Live Details</summary>
@@ -1614,47 +1614,6 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                                 </div>
                             </details>
 
-                            <details class="collapse collapse-arrow bg-base-200 rounded-box" open>
-                                <summary class="collapse-title font-medium">Suggested PID Baseline</summary>
-                                <div class="collapse-content grid grid-cols-1 gap-3 pt-2">
-                                    <div class="alert alert-info py-2 text-sm">
-                                        <span>Derived from what characterization measured on this profile. Nothing is applied automatically &mdash; review each value, apply the ones you want, then hand-tune from there. Re-running characterization updates these suggestions but never touches your saved profile.</span>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 gap-1">
-                                        <span class="label-text">Learn From Real Throws</span>
-                                        <select class="select select-bordered" id="learnFromThrowsSelect" onchange="onLearnFromThrowsChanged(this)">
-                                            <option value="false">Off</option>
-                                            <option value="true">On</option>
-                                        </select>
-                                        <span class="label-text-alt opacity-70 ot-help">When on, every normal PID charge on this profile is logged (tail, over/under, timing). Once a handful have landed, the suggestions below start using that instead of (or blended with) the one-off characterization numbers &mdash; which is what lets the suggested PID actually come down after real overthrows, and what re-anchors it after a hardware change like a motor microstep setting, without a full re-characterization. <b>Off by default; turn this on if you want the suggestions to keep learning.</b></span>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 gap-1">
-                                        <span class="label-text">Extra Safety Margin</span>
-                                        <div class="flex items-center gap-3">
-                                            <input type="range" id="aiCfgSafetyMargin" min="0" max="50" step="5" class="range range-sm flex-1" oninput="document.getElementById('aiCfgSafetyMarginVal').innerText = this.value + '%'">
-                                            <span id="aiCfgSafetyMarginVal" class="font-mono text-sm w-12 text-right">0%</span>
-                                            <button class="btn btn-xs btn-primary" onclick="aiTuningSaveAdvancedConfig(); aiLoadSuggestions();">Apply</button>
-                                        </div>
-                                        <span class="label-text-alt opacity-70 ot-help">Still seeing overthrows on the suggested values? Raise this and hit Apply &mdash; it widens both stop thresholds below (and tightens the Kp cap to match) so the motors slow down and stop earlier. This can only make a charge stop earlier, never later, so it's always safe to raise. Default 0% leaves the suggestion exactly as characterization/live data compute it; try 15-20% first.</span>
-                                    </div>
-
-                                    <div id="aiSuggestMeasured" class="text-xs bg-base-100 rounded-box p-3 font-mono whitespace-pre-wrap">Load a profile with a saved model to see suggestions.</div>
-                                    <div id="aiSuggestLiveNote" class="text-xs opacity-70"></div>
-                                    <div class="overflow-x-auto">
-                                        <table class="table table-xs">
-                                            <thead><tr><th>Setting</th><th>Current</th><th>Suggested</th><th></th></tr></thead>
-                                            <tbody id="aiSuggestBody"></tbody>
-                                        </table>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <button class="btn btn-sm btn-primary" onclick="aiApplyAllSuggestions()">Apply All &amp; Save</button>
-                                        <button class="btn btn-sm btn-ghost" onclick="aiLoadSuggestions()">Refresh</button>
-                                    </div>
-                                </div>
-                            </details>
-
                             <details class="collapse collapse-arrow bg-base-200 rounded-box">
                                 <summary class="collapse-title font-medium">Runtime Safety Guards</summary>
                                 <div class="collapse-content grid grid-cols-1 gap-3 pt-2">
@@ -1738,6 +1697,14 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                                             <input type="number" id="aiCfgErrorWeight" class="input input-bordered input-sm" step="0.1" min="0.1">
                                         </div>
                                     </div>
+                                    <div class="grid grid-cols-1 gap-1">
+                                        <span class="label-text text-xs">Extra Safety Margin</span>
+                                        <div class="flex items-center gap-3">
+                                            <input type="range" id="aiCfgSafetyMargin" min="0" max="50" step="5" class="range range-sm flex-1" oninput="document.getElementById('aiCfgSafetyMarginVal').innerText = this.value + '%'">
+                                            <span id="aiCfgSafetyMarginVal" class="font-mono text-sm w-12 text-right">0%</span>
+                                        </div>
+                                        <span class="label-text-alt opacity-70 ot-help">Widens the characterization's stop-margin math so the run comes out more conservative. 0% is the raw measured values; raise it if characterization runs are landing over.</span>
+                                    </div>
                                     <div class="grid grid-cols-2 gap-2">
                                         <button class="btn btn-sm btn-primary" onclick="aiTuningSaveAdvancedConfig()">Save</button>
                                         <button class="btn btn-sm btn-ghost" onclick="aiLoadAdvancedConfig()">Reload</button>
@@ -1762,6 +1729,144 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                                         </thead>
                                         <tbody id="aiHistoryTableBody"></tbody>
                                     </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </section>
+
+                    <!-- PID Tuning Page -->
+                    <section class="settings-page" id="settings-pid-autotune" name="PID Tuning" style="display: none;">
+                        <div class="grid grid-cols-1 gap-3">
+
+                            <div role="alert" class="alert">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-6 w-6 shrink-0 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>Runs a ladder of fixed-speed coarse and fine throws to measure flow rate and scale lag, then fits a coarse/fine handoff speed and fine landing speed sized to your safety margins. This runs on the physical trickler -- keep the cup on the scale and don't touch the controller while it's running.</span>
+                            </div>
+
+                            <div class="divider">Targets</div>
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Confirm Target Weight (grains)</span>
+                                <input id="paConfirmTargetGr" type="number" step="0.01" min="1" max="500" class="input input-bordered" placeholder="e.g. 38.70">
+                            </div>
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Time Goal (seconds)</span>
+                                <input id="paTimeGoalS" type="number" step="0.5" min="1" max="60" class="input input-bordered">
+                            </div>
+
+                            <div class="divider">Safety Margins</div>
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Coarse Stop Safety (x scatter)</span>
+                                <input id="paCoarseStopSafety" type="range" min="1" max="5" step="0.1" class="range range-primary" oninput="document.getElementById('paCoarseStopSafetyVal').innerText = this.value">
+                                <span class="label-text-alt">Current: <span id="paCoarseStopSafetyVal">-</span>x</span>
+                            </div>
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text">Fine Landing Sigma (x bracket)</span>
+                                <input id="paLandSigma" type="range" min="1" max="4" step="0.1" class="range range-primary" oninput="document.getElementById('paLandSigmaVal').innerText = this.value">
+                                <span class="label-text-alt">Current: <span id="paLandSigmaVal">-</span>x</span>
+                            </div>
+
+                            <details class="collapse collapse-arrow bg-base-200 rounded-box">
+                                <summary class="collapse-title font-medium">Advanced</summary>
+                                <div class="collapse-content grid grid-cols-1 gap-3 pt-2">
+                                    <div class="grid grid-cols-1 gap-1">
+                                        <span class="label-text">Coarse Test Charge (grains)</span>
+                                        <input id="paCoarseTargetGr" type="number" step="0.1" min="1" max="30" class="input input-bordered">
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-1">
+                                        <span class="label-text">Fine Test Charge (grains)</span>
+                                        <input id="paFineTargetGr" type="number" step="0.05" min="0.2" max="10" class="input input-bordered">
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-1">
+                                        <span class="label-text">Coarse Speed Ceiling (rps)</span>
+                                        <input id="paCoarseSpeedCeiling" type="number" step="0.1" min="0.1" max="10" class="input input-bordered">
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-1">
+                                        <span class="label-text">Fine Speed Ceiling (rps)</span>
+                                        <input id="paFineSpeedCeiling" type="number" step="0.05" min="0.05" max="10" class="input input-bordered">
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-1">
+                                        <span class="label-text">Cup Capacity (grains)</span>
+                                        <input id="paCupCapacityGr" type="number" step="1" min="20" max="2000" class="input input-bordered">
+                                    </div>
+                                </div>
+                            </details>
+
+                            <button id="paSaveConfigBtn" class="btn btn-neutral w-full" onclick="savePidAutotuneConfig()">Save Settings</button>
+
+                            <div class="divider">Run</div>
+                            <div class="flex justify-between items-center">
+                                <span class="label-text">Status:</span>
+                                <span id="paState" class="badge badge-neutral">Idle</span>
+                            </div>
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text text-xs text-gray-500">What the autotune is doing</span>
+                                <div id="paStatusMessage" class="bg-base-200 rounded-box p-3 text-sm">Idle</div>
+                            </div>
+                            <div class="grid grid-cols-1 gap-1">
+                                <span class="label-text text-xs text-gray-500">Progress</span>
+                                <progress id="paProgress" class="progress progress-primary" value="0" max="12"></progress>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="stat bg-base-200 rounded-box p-2">
+                                    <div class="stat-title text-xs">Current Speed</div>
+                                    <div id="paCurrentSpeed" class="stat-value text-lg">-</div>
+                                </div>
+                                <div class="stat bg-base-200 rounded-box p-2">
+                                    <div class="stat-title text-xs">Cup Load</div>
+                                    <div id="paCupLoad" class="stat-value text-lg">-</div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-accent w-full" onclick="scaleForceZero()">Scale Zero / Tare</button>
+
+                            <div class="divider"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="paStartBtn" class="btn btn-primary" onclick="startPidAutotune()">Start Autotune</button>
+                                <button id="paAbortBtn" class="btn btn-warning" onclick="abortPidAutotune()" disabled>Abort</button>
+                            </div>
+
+                            <div id="paResultPanel" style="display: none;">
+                                <div class="divider">Result</div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="stat bg-base-200 rounded-box p-2">
+                                        <div class="stat-title text-xs">Coarse Kp</div>
+                                        <div id="paResCoarseKp" class="stat-value text-lg">-</div>
+                                    </div>
+                                    <div class="stat bg-base-200 rounded-box p-2">
+                                        <div class="stat-title text-xs">Fine Kp</div>
+                                        <div id="paResFineKp" class="stat-value text-lg">-</div>
+                                    </div>
+                                    <div class="stat bg-base-200 rounded-box p-2">
+                                        <div class="stat-title text-xs">Coarse Max (rps)</div>
+                                        <div id="paResCoarseMax" class="stat-value text-lg">-</div>
+                                    </div>
+                                    <div class="stat bg-base-200 rounded-box p-2">
+                                        <div class="stat-title text-xs">Fine Max (rps)</div>
+                                        <div id="paResFineMax" class="stat-value text-lg">-</div>
+                                    </div>
+                                    <div class="stat bg-base-200 rounded-box p-2">
+                                        <div class="stat-title text-xs">Fine Taper (gr)</div>
+                                        <div id="paResFineTaper" class="stat-value text-lg">-</div>
+                                    </div>
+                                    <div class="stat bg-base-200 rounded-box p-2">
+                                        <div class="stat-title text-xs">Coarse Stop Threshold (gr)</div>
+                                        <div id="paResStopThreshold" class="stat-value text-lg">-</div>
+                                    </div>
+                                    <div class="stat bg-base-200 rounded-box p-2">
+                                        <div class="stat-title text-xs">Predicted Total (s)</div>
+                                        <div id="paResPredictedTotal" class="stat-value text-lg">-</div>
+                                    </div>
+                                    <div class="stat bg-base-200 rounded-box p-2">
+                                        <div class="stat-title text-xs">Meets Time Goal</div>
+                                        <div id="paResMeetsGoal" class="stat-value text-lg">-</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-base-content/70 mt-2">"Apply" loads these into the active profile's PID/speed fields and the charge-mode coarse stop threshold in RAM only. "Save" applies and writes them to EEPROM so they survive a reboot.</div>
+                                <div class="grid grid-cols-3 gap-2 mt-2">
+                                    <button class="btn btn-success btn-sm" onclick="pidAutotuneAction('apply')">Apply</button>
+                                    <button class="btn btn-primary btn-sm" onclick="pidAutotuneAction('save')">Save</button>
+                                    <button class="btn btn-neutral btn-sm" onclick="pidAutotuneAction('exit')">Dismiss</button>
                                 </div>
                             </div>
 
@@ -1955,6 +2060,7 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
                     <li><a class="text-lg" onclick="onSettingsLinkClicked('settings-firmware-update')">Firmware Update</a></li>
                     <li><a class="text-lg" onclick="onSettingsLinkClicked('settings-system-control')">System Control</a></li>
                     <li><a class="text-lg" onclick="onSettingsLinkClicked('settings-ai-tuning')">AI Tuning</a></li>
+                    <li><a class="text-lg" onclick="onSettingsLinkClicked('settings-pid-autotune')">PID Tuning</a></li>
                     <li><a class="text-lg" onclick="onSettingsLinkClicked('settings-appearance')">Appearance</a></li>
                 </ul>
             </div>
@@ -1978,11 +2084,15 @@ html[data-ot-theme="dark"], html[data-ot-theme="dark"] {
         </svg>
         <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">Settings</span>
     </button>
+    <!-- Icon/label swap between AI Tuning and PID Tuning based on the active
+         profile's Controller setting -- see _setTuningNavButton() -- so this
+         markup starts on the PID Tuning default and is corrected by JS as
+         soon as the active profile's controller is known. -->
     <button id="aiTuningNavButton" onclick="onNavButtonClicked('aiTuning')">
         <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.5 11.5 11 13l4-3.5M12 20a16.405 16.405 0 0 1-5.092-3.583A14.557 14.557 0 0 1 5 13.643V6.221a1 1 0 0 1 .7-.95l6-1.803a1 1 0 0 1 .594 0l6 1.803a1 1 0 0 1 .7.95v7.421a14.557 14.557 0 0 1-1.908 3.774A16.405 16.405 0 0 1 12 20Z"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM4 12h16m-8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM4 18h16m-4 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
         </svg>
-        <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">AI Tuning</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">PID Tuning</span>
     </button>
     <button id="purgeNavButton" onclick="onNavButtonClicked('purge')">
         <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -2861,8 +2971,10 @@ const ChargeModeState = Object.freeze({
                 // Pre-load profile names
                 loadProfileDropdowns();
 
-                // Navigate directly to AI Tuning settings page
-                onSettingsLinkClicked("settings-ai-tuning");
+                // Navigate to whichever tuning page matches the active
+                // profile's Controller setting -- PID Tuning for PID
+                // (default), AI Tuning for the legacy Adaptive controller.
+                onSettingsLinkClicked(_activeControllerIsAdaptive ? "settings-ai-tuning" : "settings-pid-autotune");
                 break;
             default:
                 break;
@@ -2905,9 +3017,17 @@ const ChargeModeState = Object.freeze({
         if (sectionId === 'settings-ai-tuning') {
             loadAiTuningPage();
             _startAiHistoryPoll();
+            _stopPaPoll();
+        }
+        else if (sectionId === 'settings-pid-autotune') {
+            _stopAiHistoryPoll();
+            loadPidAutotuneConfig();
+            pollPidAutotuneState();
+            _startPaPoll();
         }
         else if (sectionId === 'settings-firmware-update') {
             _stopAiHistoryPoll();
+            _stopPaPoll();
             otaRefreshStatus();
             loadUpdateConfig();
             refreshUpdateStatus();
@@ -2918,6 +3038,7 @@ const ChargeModeState = Object.freeze({
             // profile selector, so both need loading explicitly rather than
             // relying on the generic single-form path below.
             _stopAiHistoryPoll();
+            _stopPaPoll();
             const idx = _profileCurrentIdx || '0';
             const profileForm = document.getElementById('profileConfigForm');
             const chargeForm = document.getElementById('chargeModeConfigForm');
@@ -2954,6 +3075,7 @@ const ChargeModeState = Object.freeze({
         }
         else {
             _stopAiHistoryPoll();
+            _stopPaPoll();
             const form = targetSection.querySelector("form");
             if (form) {
                 // Clear form fields to avoid showing stale values
@@ -3093,8 +3215,13 @@ const ChargeModeState = Object.freeze({
     }
 
     function onControllerChanged(el) {
+        const isAdaptive = String(el.value) === 'true';
         const block = document.getElementById('legacyAdaptiveOptions');
-        if (block) block.style.display = (String(el.value) === 'true') ? 'block' : 'none';
+        if (block) block.style.display = isAdaptive ? 'block' : 'none';
+        // Live feedback on the bottom-nav shortcut while editing -- this
+        // select always reflects the active profile, so it's safe to
+        // reflect immediately rather than waiting for Apply/Save.
+        _setTuningNavButton(isAdaptive);
     }
 
     function refreshLegacyAdaptiveVisibility() {
@@ -3283,14 +3410,6 @@ const ChargeModeState = Object.freeze({
         if (nCharge) calls.push(fetch('/rest/charge_mode_config?' + chargeParams.toString()));
         return Promise.all(calls)
             .then(() => { _profileCache = null; aiLoadSuggestions(); loadProfileDropdowns(); });
-    }
-
-    function aiApplyAllSuggestions() {
-        if (!_aiSuggested) return;
-        if (!confirm('Apply every suggested value to this profile and save? Your current values will be replaced.')) return;
-        _applySuggestionsCore()
-        .then(() => { const d = document.getElementById('settingsAppliedSuccessDialog'); if (d) d.showModal(); })
-        .catch(e => alert('Failed to apply all: ' + e.message));
     }
 
     // =======================================================================
@@ -4345,6 +4464,39 @@ const ChargeModeState = Object.freeze({
     var _profileCache = null;   // {idx: name}
     var _profileCurrentIdx = '0';
 
+    // Whether the active profile's Controller is set to the legacy Adaptive
+    // controller (true) or PID (false, default/recommended). Drives which
+    // tuning page the 4th bottom-nav button opens -- AI Tuning for Adaptive,
+    // PID Tuning for PID -- so the shortcut always matches the tool that
+    // actually applies to whichever profile is active.
+    var _activeControllerIsAdaptive = false;
+
+    const _AI_TUNING_NAV_ICON_PATH = 'M9.5 11.5 11 13l4-3.5M12 20a16.405 16.405 0 0 1-5.092-3.583A14.557 14.557 0 0 1 5 13.643V6.221a1 1 0 0 1 .7-.95l6-1.803a1 1 0 0 1 .594 0l6 1.803a1 1 0 0 1 .7.95v7.421a14.557 14.557 0 0 1-1.908 3.774A16.405 16.405 0 0 1 12 20Z';
+    const _PID_TUNING_NAV_ICON_PATH = 'M4 6h16M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM4 12h16m-8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM4 18h16m-4 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z';
+
+    // Swap the 4th bottom-nav button's icon/label to match the controller
+    // that's actually active, and remember the choice so onNavButtonClicked
+    // knows which settings page to open.
+    function _setTuningNavButton(isAdaptive) {
+        _activeControllerIsAdaptive = !!isAdaptive;
+        const btn = document.getElementById('aiTuningNavButton');
+        if (!btn) return;
+        const path = btn.querySelector('svg path');
+        const label = btn.querySelector('span');
+        if (path) path.setAttribute('d', _activeControllerIsAdaptive ? _AI_TUNING_NAV_ICON_PATH : _PID_TUNING_NAV_ICON_PATH);
+        if (label) label.innerText = _activeControllerIsAdaptive ? 'AI Tuning' : 'PID Tuning';
+    }
+
+    // Look up which controller the given profile actually has saved, and
+    // update the nav button to match. Called on boot and whenever the
+    // active profile changes.
+    function _refreshTuningNavButton(idx) {
+        fetch(chargeModeConfigUrl(idx, { readOnly: true }))
+        .then(r => r.json())
+        .then(data => _setTuningNavButton(String(data.c27) === 'true'))
+        .catch(() => {});
+    }
+
     function _applyProfileCache() {
         const selectors = [
             document.getElementById('aiTuningProfileSelect'),
@@ -4365,6 +4517,7 @@ const ChargeModeState = Object.freeze({
             sel.value = _profileCurrentIdx;
         });
         setProfileStatusMessage(`Active profile ${_profileCurrentIdx} is the reboot default.`, 'info');
+        _refreshTuningNavButton(_profileCurrentIdx);
     }
 
     // Populate all profile dropdowns. Uses cache if available, fetches once otherwise.
@@ -4416,15 +4569,6 @@ const ChargeModeState = Object.freeze({
         .then(r => r.json())
         .then(updateAiTuningUI)
         .catch(() => {});
-    }
-
-    function onLearnFromThrowsChanged(el) {
-        const idx = _currentAiTuningProfileIdx();
-        const val = String(el.value) === 'true';
-        fetch(`/rest/charge_mode_config?pf=${encodeURIComponent(idx)}&c16=${val}&ee=true`)
-        .then(r => r.json())
-        .then(() => aiLoadSuggestions())
-        .catch(e => alert('Failed to save: ' + e.message));
     }
 
     function onSaveKernelWeightClicked() {
@@ -4571,6 +4715,141 @@ const ChargeModeState = Object.freeze({
     }
     function _stopAiHistoryPoll() {
         if (_aiHistoryPollId) { clearInterval(_aiHistoryPollId); _aiHistoryPollId = null; }
+    }
+
+    // ---- PID Tuning (autotune) page ----
+    let _paPollId = null;
+
+    function loadPidAutotuneConfig() {
+        fetch('/rest/pid_autotune_config')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('paConfirmTargetGr').value = data.confirm_target_gr;
+            document.getElementById('paTimeGoalS').value = data.time_goal_s;
+            document.getElementById('paCoarseStopSafety').value = data.coarse_stop_safety;
+            document.getElementById('paCoarseStopSafetyVal').innerText = data.coarse_stop_safety;
+            document.getElementById('paLandSigma').value = data.land_sigma;
+            document.getElementById('paLandSigmaVal').innerText = data.land_sigma;
+            document.getElementById('paCoarseTargetGr').value = data.coarse_target_gr;
+            document.getElementById('paFineTargetGr').value = data.fine_target_gr;
+            document.getElementById('paCoarseSpeedCeiling').value = data.coarse_speed_ceiling;
+            document.getElementById('paFineSpeedCeiling').value = data.fine_speed_ceiling;
+            document.getElementById('paCupCapacityGr').value = data.cup_capacity_gr;
+        })
+        .catch(e => console.error('Failed to load PID autotune config:', e));
+    }
+
+    function _paBuildConfigParams() {
+        const p = new URLSearchParams();
+        p.set('confirm_target_gr', document.getElementById('paConfirmTargetGr').value);
+        p.set('time_goal_s', document.getElementById('paTimeGoalS').value);
+        p.set('coarse_stop_safety', document.getElementById('paCoarseStopSafety').value);
+        p.set('land_sigma', document.getElementById('paLandSigma').value);
+        p.set('coarse_target_gr', document.getElementById('paCoarseTargetGr').value);
+        p.set('fine_target_gr', document.getElementById('paFineTargetGr').value);
+        p.set('coarse_speed_ceiling', document.getElementById('paCoarseSpeedCeiling').value);
+        p.set('fine_speed_ceiling', document.getElementById('paFineSpeedCeiling').value);
+        p.set('cup_capacity_gr', document.getElementById('paCupCapacityGr').value);
+        return p;
+    }
+
+    function savePidAutotuneConfig() {
+        const p = _paBuildConfigParams();
+        fetch('/rest/pid_autotune_config_set?' + p.toString())
+        .then(r => r.json())
+        .then(() => loadPidAutotuneConfig())
+        .catch(e => alert('Failed to save PID autotune settings: ' + e.message));
+    }
+
+    function _paSetRunningUi(isRunning) {
+        document.getElementById('paStartBtn').disabled = isRunning;
+        document.getElementById('paAbortBtn').disabled = !isRunning;
+    }
+
+    function startPidAutotune() {
+        const p = _paBuildConfigParams();
+        fetch('/rest/pid_autotune_start?' + p.toString())
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Could not start PID autotune: ' + (data.error || 'unknown error'));
+                return;
+            }
+            _paSetRunningUi(true);
+            pollPidAutotuneState();
+        })
+        .catch(e => alert('Failed to start PID autotune: ' + e.message));
+    }
+
+    function abortPidAutotune() {
+        pidAutotuneAction('abort');
+    }
+
+    function pidAutotuneAction(action) {
+        fetch('/rest/pid_autotune_action?a=' + encodeURIComponent(action))
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success && data.error) {
+                alert('PID autotune action failed: ' + data.error);
+            }
+            pollPidAutotuneState();
+        })
+        .catch(e => console.error('PID autotune action failed:', e));
+    }
+
+    function _paRenderState(data) {
+        const stateLabels = {
+            idle: 'Idle', zeroing: 'Zeroing', coarse: 'Coarse', fine: 'Fine',
+            fitting: 'Fitting', done: 'Done', aborted: 'Aborted', error: 'Error'
+        };
+        const badge = document.getElementById('paState');
+        badge.innerText = stateLabels[data.state] || data.state;
+        badge.className = 'badge ' + (
+            data.state === 'done' ? 'badge-success' :
+            (data.state === 'error' || data.state === 'aborted') ? 'badge-error' :
+            data.state === 'idle' ? 'badge-neutral' : 'badge-info');
+
+        document.getElementById('paStatusMessage').innerText = data.message || '';
+        document.getElementById('paProgress').max = data.throws_per_phase || 12;
+        document.getElementById('paProgress').value = data.throw_idx || 0;
+        document.getElementById('paCurrentSpeed').innerText = (data.current_speed || 0).toFixed(2) + ' rps';
+        document.getElementById('paCupLoad').innerText = (data.cup_load_gr || 0).toFixed(2) + ' gr';
+
+        const running = (data.state !== 'idle' && data.state !== 'done' &&
+                         data.state !== 'aborted' && data.state !== 'error');
+        _paSetRunningUi(running);
+
+        const resultPanel = document.getElementById('paResultPanel');
+        if (data.result_valid) {
+            resultPanel.style.display = 'block';
+            const r = data.result;
+            document.getElementById('paResCoarseKp').innerText = r.coarse_kp.toFixed(3);
+            document.getElementById('paResFineKp').innerText = r.fine_kp.toFixed(3);
+            document.getElementById('paResCoarseMax').innerText = r.coarse_max_rps.toFixed(3);
+            document.getElementById('paResFineMax').innerText = r.fine_max_rps.toFixed(3);
+            document.getElementById('paResFineTaper').innerText = r.fine_taper_gr.toFixed(2);
+            document.getElementById('paResStopThreshold').innerText = r.coarse_stop_threshold.toFixed(3);
+            document.getElementById('paResPredictedTotal').innerText = r.predicted_total_s.toFixed(1) + 's';
+            document.getElementById('paResMeetsGoal').innerText = r.meets_time_goal ? 'Yes' : 'No';
+        }
+        else {
+            resultPanel.style.display = 'none';
+        }
+    }
+
+    function pollPidAutotuneState() {
+        fetch('/rest/pid_autotune_state')
+        .then(r => r.json())
+        .then(data => _paRenderState(data))
+        .catch(() => {});
+    }
+
+    function _startPaPoll() {
+        _stopPaPoll();
+        _paPollId = setInterval(pollPidAutotuneState, 1000);
+    }
+    function _stopPaPoll() {
+        if (_paPollId) { clearInterval(_paPollId); _paPollId = null; }
     }
 
     function _setAiChargeModeStateWidget(state) {
@@ -4855,18 +5134,6 @@ const ChargeModeState = Object.freeze({
             .catch(() => {});
         })
         .catch(e => console.error('Error saving AI model:', e));
-    }
-
-    // Save the characterization model, then immediately apply its suggested
-    // PID baseline to the profile - the common "I just finished
-    // characterizing, now set me up" workflow in one click.
-    function aiSaveModelAndSuggestions() {
-        if (!confirm('Save the learned model AND apply its suggested PID baseline to this profile? Your current PID/threshold values will be replaced.')) return;
-        aiTuningApply()
-        .then(() => aiLoadSuggestions())
-        .then(() => _applySuggestionsCore())
-        .then(() => { const d = document.getElementById('settingsAppliedSuccessDialog'); if (d) d.showModal(); })
-        .catch(e => alert('Failed to save both: ' + e.message));
     }
 
     const _aiCfgDefaults = {

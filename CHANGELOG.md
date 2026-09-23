@@ -14,11 +14,48 @@ Base: `Opentrickler_ML` `2026.07.12-beta.14`.
 
 ### Added
 
+- **PID Tuning — automatic PID/speed characterization** — new dedicated
+  "PID Tuning" settings page (the bottom-nav's 4th icon swaps to it
+  automatically whenever the active profile's Controller is set to PID)
+  that runs a ladder of fixed-speed coarse and fine throws, measures flow
+  rate (gn/s per rps) and scale-report lag from them, and fits a
+  coarse/fine handoff speed, fine landing speed, and coarse stop threshold
+  sized to your configured safety margins (a coarse-stop safety multiple
+  of measured scatter, and a fine-landing sigma against your Accepted
+  Charge Tolerance) and a target total throw time. The run stays on the
+  physical trickler the whole time — no simulation. Results (Kp, min/max
+  speeds, fine taper, stop threshold, predicted timing, whether the time
+  goal was met) can be applied to the active profile in RAM for an
+  immediate test-throw, or saved straight to EEPROM. Adapted from the
+  "Learn Powder" characterization approach in
+  [magnaludus/OpenTrickler-RP2040-Controller](https://github.com/magnaludus/OpenTrickler-RP2040-Controller),
+  reworked for this fork's PID-only `charge_mode` (no lag-compensated stop
+  prediction) and wired into the existing REST/menu/EEPROM architecture.
+  v1 does not include that reference project's automated confirm-throws
+  loop or automatic cup-dump handling — it aborts rather than pausing if a
+  throw would overfill the cup. New REST endpoints:
+  `/rest/pid_autotune_state`, `/rest/pid_autotune_config`,
+  `/rest/pid_autotune_config_set`, `/rest/pid_autotune_start`,
+  `/rest/pid_autotune_action`. New EEPROM region
+  (`EEPROM_PID_AUTOTUNE_CONFIG_BASE_ADDR`, 17K) — brand new, so it doesn't
+  affect or reset any existing settings.
+- **Controller moved to the top of Profile settings** — the PID/Adaptive
+  Controller selector (previously buried mid-page among the LED colour
+  fields) now sits directly under the profile picker, since it decides
+  which of the settings below actually apply. The PID Gains fields (only
+  relevant while Controller is set to PID) moved into their own section
+  at the very bottom of the page to match.
+- **Bottom-nav tuning shortcut now follows your Controller choice** — the
+  4th bottom-nav icon reads "PID Tuning" when the active profile's
+  Controller is set to PID, or "AI Tuning" when it's set to Adaptive,
+  updating live as you change the Controller dropdown and re-checked
+  automatically whenever you switch profiles. Both pages remain reachable
+  from the Settings drawer regardless of which one the shortcut points at.
 - **AI Tuning — Extra Safety Margin** — new adjustable slider (0–50%,
-  default 0%) on the AI Tuning page's Suggested PID Baseline panel, for
-  users reporting overthrows on the AI-suggested values. It scales the
-  computed coarse/fine stop thresholds outward before the existing Kp cap
-  is applied, so it composes correctly with — rather than fights — every
+  default 0%) in the AI Tuning page's Advanced Config panel, for users
+  reporting overthrows on the AI-suggested values. It scales the computed
+  coarse/fine stop thresholds outward before the existing Kp cap is
+  applied, so it composes correctly with — rather than fights — every
   other safety mechanism already in that calculation. It is purely
   additive/conservative: it can only make the controller stop earlier
   than it otherwise would, never later, so raising it cannot itself cause
@@ -104,6 +141,19 @@ Base: `Opentrickler_ML` `2026.07.12-beta.14`.
   `app.bin` straight to that same release using GitHub's own automatically
   provided token — **zero repository secrets to create or manage**. See
   QUICKSTART.md section 11.
+
+### Removed
+
+- **"Suggested PID Baseline" panel on AI Tuning** — removed the
+  auto-suggested PID/threshold table (and its "Save Suggested PIDs" /
+  "Save Both" buttons and "Learn From Real Throws" toggle) now that PID
+  Tuning has its own dedicated, purpose-built characterization page (see
+  Added, above). AI Tuning now focuses on the adaptive/AI controller
+  itself: characterization, calibration, and the learned model — not on
+  producing PID numbers for the separate PID controller. The Extra Safety
+  Margin slider that lived in this panel was kept and moved into Advanced
+  Config, since it's a characterization run parameter rather than a PID
+  suggestion.
 
 ### Changed
 

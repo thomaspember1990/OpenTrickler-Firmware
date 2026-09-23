@@ -1,6 +1,20 @@
 name: Publish Update Manifest
 
-run-name: Publish update manifest for ${{ github.event.release.tag_name || github.ref_name }}
+run-name: Publish update manifest for ${{ github.event.inputs.version || github.event.release.tag_name || github.ref_name }}
+
+# Builds firmware exactly like cmake.yml, then attaches manifest.json +
+# app.bin to the GitHub Release that triggered this run. Every device out
+# there checks GitHub directly (Settings > Firmware Update > "Check for
+# Updates") at:
+#
+#   https://github.com/<owner>/<repo>/releases/latest/download/manifest.json
+#   https://github.com/<owner>/<repo>/releases/latest/download/app.bin
+#
+# so once these two files are attached to a release, it's live -- no server
+# of your own to run, no secrets to configure. This workflow uses GitHub's
+# own automatically-provided GITHUB_TOKEN (scoped to just this repo, just
+# this run) to upload the assets; you don't create or manage any credential
+# for it. See QUICKSTART.md, section 11, and src/ota_client.c / src/ota_tls.c.
 
 on:
   release:
@@ -50,6 +64,18 @@ jobs:
 
       - name: Build manifest + stage release assets
         env:
+          # Substituting ${{ github.event.release.body }} directly into the
+          # `run:` script text (as this used to do inline inside the
+          # --notes "..." argument) is a straight text paste done by the
+          # Actions runner BEFORE bash ever sees the line -- it is not a
+          # normal shell variable expansion. Release notes containing a
+          # blank line, a quote character, or (as here) lines starting with
+          # "-" broke out of the quoted argument and got parsed by
+          # publish_update_manifest.py as extra, unrecognized CLI flags,
+          # failing the whole job. Routing it through `env:` instead makes
+          # GitHub set RELEASE_NOTES as a real environment variable, so
+          # `"$RELEASE_NOTES"` below is one opaque string to bash no matter
+          # what characters or lines it contains.
           RELEASE_NOTES: ${{ github.event.release.body }}
         run: |
           VERSION="${{ github.event.inputs.version || github.event.release.tag_name || github.ref_name }}"
@@ -63,7 +89,23 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # github.ref_name is the BRANCH the workflow ran on (e.g. "main")
+          # for a manual workflow_dispatch run, not a release tag -- so it
+          # must never be reached before the typed-in version input. Same
+          # fallback order as the build step above.
           TAG="${{ github.event.inputs.version || github.event.release.tag_name || github.ref_name }}"
+          # manifest.json + app.bin are what the in-GUI "Check for Updates"
+          # feature asks for by exact name -- a device already running any
+          # OpenTrickler build with the auto-updater needs only those two.
+          # app.uf2 is for everyone else: the very first flash of a fresh
+          # Pico 2 W (BOOTSEL drag-and-drop) has no auto-updater to invoke
+          # yet, so that device needs a ready-to-flash .uf2 as a release
+          # asset too, not just the raw .bin the updater consumes. Renamed
+          # with the version in the filename so multiple releases' assets
+          # stay distinguishable on the repo's Releases page.
+          #
+          # --clobber lets re-running this workflow (or workflow_dispatch)
+          # replace previously-uploaded assets on the same release.
           cp "build-pico2_w/app.uf2" "publish_out/OpenTrickler-Firmware-${TAG}.uf2"
 
           gh release upload "$TAG" \
@@ -74,3 +116,6 @@ jobs:
             --clobber
 
           echo "Attached manifest.json, app.bin and OpenTrickler-Firmware-${TAG}.uf2 to release $TAG."
+          echo "Any device pointed at ${{ github.repository }} in"
+          echo "Settings > Firmware Update will see this as the latest update,"
+          echo "and a fresh board can flash the .uf2 directly for its first install."
