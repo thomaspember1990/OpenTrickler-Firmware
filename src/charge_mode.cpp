@@ -1801,23 +1801,25 @@ void charge_mode_wait_for_complete() {
         }
         else {
             ok = run_motor_for_duration(SELECT_COARSE_TRICKLER_MOTOR, plan_speed_rps, plan_on_time_ms);
-            if (ok) {
-                float stop_weight = capture_coarse_stop_measurement(320, start_weight);
-                mark_coarse_stop(stop_weight, true);
-            }
         }
 
         if (!ok) {
             return;
         }
 
+        // run_motor_for_duration() has already stopped the motor, so take the
+        // end tick here, before any scale wait or the coarse reverse in
+        // mark_coarse_stop(), or those would be counted as motor on-time.
         TickType_t motor_end_tick = xTaskGetTickCount();
+
+        // Raw reading, not capture_coarse_stop_measurement(): that only accepts
+        // weights above 3% of the charge target, and characterization pulses
+        // are deliberately far smaller than that (e.g. under 1.3 gr for a
+        // 43.5 gr target), so it returned NaN and ai_tuning_record_drop()
+        // rejected every drop, leaving charge mode on "Remove Cup".
         float stop_weight = get_latest_measurement(250, start_weight);
         if (sample_motor_mode == AI_MOTOR_MODE_COARSE_ONLY) {
-            stop_weight = capture_coarse_stop_measurement(320, stop_weight);
-            if (!coarse_stop_weight_valid) {
-                mark_coarse_stop(stop_weight, true);
-            }
+            mark_coarse_stop(stop_weight, true);
         }
 
         memset(&pending_ai_drop, 0, sizeof(pending_ai_drop));
